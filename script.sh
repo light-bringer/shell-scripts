@@ -1,10 +1,27 @@
 #!/bin/bash
 
 
+
+function ALERT() {
+
+    ##################
+    # ALERT function #
+    # with exit code #
+    ##################
+
+    message="$1"
+    exit_code="$2"
+    echo "ERROR: $message, exit code: $exit_code"
+    exit $exit_code
+}
+
+
 function send_mail() {
+
     ########################
     # A SEND MAIL FUNCTION #
     ########################
+
     to="$1"
     subject="$2"
     body="$3"
@@ -15,9 +32,11 @@ function send_mail() {
 }
 
 function error_mail() {
+
     ##########################
     # MAIL SENDER FROM LISTS #
     ##########################
+
     status_value="$1"
     echo $status
     declare -a error_mail_list=("yodebu@gmail.com" "yodebu2@gmail.com")
@@ -53,3 +72,4 @@ FILE_NUM=$2
 
 statusv="fass"
 error_mail $statusv
+ALERT hithere 2
