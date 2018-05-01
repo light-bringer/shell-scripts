@@ -2,6 +2,9 @@
 
 
 function send_mail() {
+    ########################
+    # A SEND MAIL FUNCTION #
+    ########################
     to="$1"
     subject="$2"
     body="$3"
@@ -12,6 +15,9 @@ function send_mail() {
 }
 
 function error_mail() {
+    ##########################
+    # MAIL SENDER FROM LISTS #
+    ##########################
     status_value="$1"
     echo $status
     declare -a error_mail_list=("yodebu@gmail.com" "yodebu2@gmail.com")
@@ -40,6 +46,8 @@ function error_mail() {
 }
 
 
+FEED_NAME=$1
+FILE_NUM=$2
 
 ## TEST CODE
 
