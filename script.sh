@@ -1,8 +1,18 @@
 #!/bin/bash
 
 
+function FILE_EXISTS() {
+    FILE=$1
+    if [ -f $FILE ]; then
+           echo "File $FILE exists."
+           return 0
+       else
+           echo "File $FILE does not exist."
+           return -1
+       fi
+}
 
-function ALERT() {
+function FAIL_ALERT() {
 
     ##################
     # ALERT function #
@@ -11,7 +21,7 @@ function ALERT() {
 
     message="$1"
     exit_code="$2"
-    echo "ERROR: $message, exit code: $exit_code"
+    echo "ERROR: $message, exit code: $exit_code" 1>&2
     exit $exit_code
 }
 
@@ -60,16 +70,42 @@ function error_mail() {
         done
     else
         echo "Wrong Status!"
+        message="FAiled due to wrong status!"
+        FAIL_ALERT "$message" 1
     fi
 
 }
 
 
+##########################################################################
+
+#######################################
+###      MAIN CODE STARTS HERE      ###
+#######################################
+
+
 FEED_NAME=$1
 FILE_NUM=$2
+
+#LOG_DIRECTORY_FULLPATH
+LOG_DIR="/home/lightbringer/Desktop/shell-work/logs/"
+
+#SET TIMESTAMP
+DATE=`date +%Y%m%d%H%M%S`
+
+log_filename="fileLoader.$FEED_NAME.$DATE.console.log"
+error_filename="fileLoader.$FEED_NAME.$DATE.error.log"
+log_fullpath=$LOG_DIR$log_filename
+error_log_fullpath=$LOG_DIR$error_filename
+
+# fileLoader.<$Feed_NAME>.<YYMMDDHHMMSS>.log.
+
+exec 2> >(tee -a $error_log_fullpath)
+exec 1> >(tee -a $log_fullpath)
 
 ## TEST CODE
 
 statusv="fass"
 error_mail $statusv
-ALERT hithere 2
+# ALERT hithere 2
+FILE_EXISTS $PWD
