@@ -26,6 +26,46 @@ function FAIL_ALERT() {
 }
 
 
+
+
+function DECOMPRESS_FILE() {
+    FILENAME=$1
+    echo $FILENAME
+    if  [[ ! -e $INBOUNDDIR/$FILENAME".done" ]]; then
+        echo "Done File not exist"
+        FAIL_ALERT "FILE does not exist" 14
+    fi
+    cp $INBOUNDDIR/$FILENAME".done" $TEMPDIR
+    cp $INBOUNDDIR/$FILENAME".tar" $TEMPDIR
+    tar -C $TEMPDIR -xf $TEMPDIR/$FILENAME."tar"
+    echo "Done decompressing files"
+    return
+}
+
+
+
+function TAR_NAME() {
+    shopt -s nocasematch
+    filepath=$1
+    # this regex is wrong, I mean it does not support multiple dot filenames!
+    matchRegex='.*\.(tgz$)|(tar\.gz$)|(tar)'
+    echo $filepath
+    while read line
+    do
+        NAME=`echo $line | cut -d "," -f1`
+        array=$(echo $line | tr "," "\n")
+        for i in $array
+        do
+            [[ -f "$i" ]] &&  [[ "$i" =~ "$matchRegex"  ]] &&  export TARFILE=$i;
+        done
+    done < $filepath
+    echo $TARFILE
+    return $TARFILE
+}
+
+
+
+
 function send_mail() {
 
     ########################
@@ -83,7 +123,7 @@ function CONNECT_DB() {
     db2 connect to $DBNAME user $USER using $PASSWD
     rec=0
     if [ $rec -ne 0 ]; then
-        ALERT "Failure in connecting to DB -`date +%Y%m%d%H%M%S` " 10
+        FAIL_ALERT "Failure in connecting to DB -`date +%Y%m%d%H%M%S` " 11
     fi
 }
 
@@ -95,27 +135,43 @@ function DISCONNECT_DB() {
     db2 disconnect $DBNAME
     rec=$?
     if [ $rec -ne 0 ]; then
-        ALERT "Failure in disconnecting from DB -`date +%Y%m%d%H%M%S` " 10
+        FAIL_ALERT "Failure in disconnecting from DB -`date +%Y%m%d%H%M%S` " 11
     fi
 }
 
 
 function RUN_ETL() {
 
+
     # defining informatica details
     INFA_SERVICE=$Integration_Service
     DOMAIN_NAME=$ETL_DOMAIN
     PM_USER=$ETL_USER
     INFA_FOLDER=$FOLDER
+    FILENAME = $1
     if [ -s $SRCDIR/*.csv ]; then
         echo " Found file : $FILENAME.csv "
         pmcmd startworkflow -sv $INFA_SERVICE -d $DOMAIN_NAME -uv $PM_USER  -wait wf_XXX
     else
         echo " File Not Found : $FILENAME.csv "
-        ALERT " File Not Found : $FILENAME.csv " 10
+        FAIL_ALERT " File Not Found : $FILENAME.csv " 10
     fi
     return
 }
+
+function INSERT_AUDIT_RECORD() {
+    export EVENT_ID=100
+    CONNECT_DB
+    db2 "insert into light.tsl_job_audit values (1, $File_Num,100,$Admin_Proc_DT,'VPAS', ,,,,,,,,,,,,,,,,)";
+    db2 commit
+
+    echo "FILE PROCESSING FAILED WITH ERROR MSG: " ${MSG}
+    echo "FILE PROCESSING ABORTED"
+    exit 1
+    DISCONNECT_DB;
+
+}
+
 
 
 ##########################################################################
@@ -125,16 +181,23 @@ function RUN_ETL() {
 #######################################
 
 
+if [ "$#" -ge 1 ]; then
+    export FEED_NAME=$1
+    if [ -z "$2" ]; then
+        export FILE_NUM=1
+    else
+        export FILE_NUM=$2
+    fi
+else
+    FAIL_ALERT "NO PARAMETERS WERE GIVEN" 1
+fi
 
-
-FEED_NAME=$1
-FILE_NUM=$2
 
 #LOG_DIRECTORY_FULLPATH
-export LOG_DIR="/home/lightbringer/Desktop/shell-work/logs/"
+export LOG_DIR="/home/lightbringer/Desktop/shell-work/logs"
 export INBOUND_DIR="/home/lightbringer/Desktop/shell-work/inbound"
 export TEMP_DIR="/home/lightbringer/Desktop/shell-work/tmp"
-
+export ARCHIVE_DIR="/home/lightbringer/Desktop/shell-work/archive"
 
 #SET TIMESTAMP
 DATE=`date +%Y%m%d%H%M%S`
@@ -149,9 +212,20 @@ error_log_fullpath=$LOG_DIR$error_filename
 exec 2> >(tee -a $error_log_fullpath)
 exec 1> >(tee -a $log_fullpath)
 
-## TEST CODE
 
+TXT_FILE_PATH=$INBOUND_DIR/$FEED_NAME.txt
+
+if [ $(FILE_EXISTS $TXT_FILE_PATH) -eq -1 ] ; then
+    FAIL_ALERT "File does not exist!" 1
+fi
+
+
+
+
+#TEST CODE
+echo $FILENAME $FILENUM
 statusv="fass"
 error_mail $statusv
 # ALERT hithere 2
 FILE_EXISTS $PWD
+
