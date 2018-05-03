@@ -27,6 +27,18 @@ function FAIL_ALERT() {
 
 
 
+function ARCHIVE_FILE() {
+    FILENAME=$1
+    time=`date +%s`
+    cp $INBOUNDDIR/$FILENAME".done" $ARCHIVEDIR
+    cp $INBOUNDDIR/$FILENAME".tar" $ARCHIVEDIR
+    mv $ARCHIVEDIR/$FILENAME".done" $ARCHIVEDIR/$FILENAME"_"$time".done"
+    mv $ARCHIVEDIR/$FILENAME".tar" $ARCHIVEDIR/$FILENAME"_"$time".tar"
+    echo "Archiving of the source files is done"
+
+}
+
+
 
 function DECOMPRESS_FILE() {
     FILENAME=$1
@@ -71,8 +83,9 @@ function BASENAME() {
 
 function COPY_ARCHIVE() {
     COPYDIR=$1
-    TXTPATH=$2
-    TARPATH=$3
+    FILENAME=$2
+    TXTPATH=$FILENAME.txt
+    TARPATH=$FILENAME.tar
 
     MY_DATE=`date +%Y%m%d%H%M%S`
 
