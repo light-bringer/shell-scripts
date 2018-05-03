@@ -49,21 +49,37 @@ function TAR_NAME() {
     filepath=$1
     # this regex is wrong, I mean it does not support multiple dot filenames!
     matchRegex='.*\.(tgz$)|(tar\.gz$)|(tar)'
-    echo $filepath
     while read line
     do
         NAME=`echo $line | cut -d "," -f1`
         array=$(echo $line | tr "," "\n")
         for i in $array
         do
-            [[ -f "$i" ]] &&  [[ "$i" =~ "$matchRegex"  ]] &&  export TARFILE=$i;
+        #    [[ -f "$i" ]] &&  [[ "$i" =~ "$matchRegex"  ]] &&  export TARFILE=$i;
+        if [ $i = *.tar ]; then
+            export TARFILE=$i
+        fi
         done
     done < $filepath
     echo $TARFILE
-    return $TARFILE
+}
+
+function BASENAME() {
+    echo $(basename -- $1)
 }
 
 
+function COPY_ARCHIVE() {
+    COPYDIR=$1
+    TXTPATH=$2
+    TARPATH=$3
+
+    MY_DATE=`date +%Y%m%d%H%M%S`
+
+    cp $TXTPATH $COPYDIR/$(BASENAME $TXTPATH).$MYDATE
+    cp $TARPATH $COPYDIR/$(BASENAME $TARPATH).$MYDATE
+
+}
 
 
 function send_mail() {
@@ -204,8 +220,8 @@ DATE=`date +%Y%m%d%H%M%S`
 
 log_filename="fileLoader.$FEED_NAME.$DATE.console.log"
 error_filename="fileLoader.$FEED_NAME.$DATE.error.log"
-log_fullpath=$LOG_DIR$log_filename
-error_log_fullpath=$LOG_DIR$error_filename
+log_fullpath=$LOG_DIR/$log_filename
+error_log_fullpath=$LOG_DIR/$error_filename
 
 # fileLoader.<$Feed_NAME>.<YYMMDDHHMMSS>.log.
 
