@@ -77,6 +77,47 @@ function error_mail() {
 }
 
 
+
+function CONNECT_DB() {
+    echo "db2 connect to $DBNAME user $USER using $PASSWD"
+    db2 connect to $DBNAME user $USER using $PASSWD
+    rec=0
+    if [ $rec -ne 0 ]; then
+        ALERT "Failure in connecting to DB -`date +%Y%m%d%H%M%S` " 10
+    fi
+}
+
+
+
+function DISCONNECT_DB() {
+    #To disconnect from DB2 database
+    echo "disconnecting from DB"
+    db2 disconnect $DBNAME
+    rec=$?
+    if [ $rec -ne 0 ]; then
+        ALERT "Failure in disconnecting from DB -`date +%Y%m%d%H%M%S` " 10
+    fi
+}
+
+
+function RUN_ETL() {
+
+    # defining informatica details
+    INFA_SERVICE=$Integration_Service
+    DOMAIN_NAME=$ETL_DOMAIN
+    PM_USER=$ETL_USER
+    INFA_FOLDER=$FOLDER
+    if [ -s $SRCDIR/*.csv ]; then
+        echo " Found file : $FILENAME.csv "
+        pmcmd startworkflow -sv $INFA_SERVICE -d $DOMAIN_NAME -uv $PM_USER  -wait wf_XXX
+    else
+        echo " File Not Found : $FILENAME.csv "
+        ALERT " File Not Found : $FILENAME.csv " 10
+    fi
+    return
+}
+
+
 ##########################################################################
 
 #######################################
@@ -84,11 +125,16 @@ function error_mail() {
 #######################################
 
 
+
+
 FEED_NAME=$1
 FILE_NUM=$2
 
 #LOG_DIRECTORY_FULLPATH
-LOG_DIR="/home/lightbringer/Desktop/shell-work/logs/"
+export LOG_DIR="/home/lightbringer/Desktop/shell-work/logs/"
+export INBOUND_DIR="/home/lightbringer/Desktop/shell-work/inbound"
+export TEMP_DIR="/home/lightbringer/Desktop/shell-work/tmp"
+
 
 #SET TIMESTAMP
 DATE=`date +%Y%m%d%H%M%S`
